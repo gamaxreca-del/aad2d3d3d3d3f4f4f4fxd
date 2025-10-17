@@ -1,0 +1,3199 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم GAMA STORE</title>
+    <!-- استبدل هذه -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2196F3;
+            --secondary: #03A9F4;
+            --accent: #4FC3F7;
+            --success: #4CAF50;
+            --danger: #F44336;
+            --warning: #FF9800;
+            --dark: #0F1A2F;
+            --light: #F5F5F5;
+            --text: #F5F5F5;
+            --sidebar-width: 250px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: var(--dark);
+            color: var(--text);
+            transition: all 0.3s ease;
+            line-height: 1.6;
+            scroll-behavior: smooth;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* نظام الإشعارات */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 400px;
+        }
+
+        .notification {
+            background: white;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border-left: 4px solid var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(400px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            max-width: 100%;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .notification.hide {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+
+        .notification.success {
+            border-left-color: var(--success);
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.05));
+        }
+
+        .notification.error {
+            border-left-color: var(--danger);
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.15), rgba(244, 67, 54, 0.05));
+        }
+
+        .notification.warning {
+            border-left-color: var(--warning);
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.05));
+        }
+
+        .notification.info {
+            border-left-color: var(--primary);
+            background: linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.05));
+        }
+
+        .notification-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .notification.success .notification-icon {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--success);
+        }
+
+        .notification.error .notification-icon {
+            background: rgba(244, 67, 54, 0.2);
+            color: var(--danger);
+        }
+
+        .notification.warning .notification-icon {
+            background: rgba(255, 152, 0, 0.2);
+            color: var(--warning);
+        }
+
+        .notification.info .notification-icon {
+            background: rgba(33, 150, 243, 0.2);
+            color: var(--primary);
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--dark);
+            font-size: 1rem;
+        }
+
+        .notification-message {
+            font-size: 0.9rem;
+            color: #666;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .notification-close:hover {
+            color: var(--dark);
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        /* شاشة تسجيل الدخول */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--dark) 0%, #1a1a1a 100%);
+        }
+
+        .login-form {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 3rem;
+            border: 1px solid rgba(33, 150, 243, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
+            margin-bottom: 2rem;
+        }
+
+        .login-logo i {
+            margin-left: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: right;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(33, 150, 243, 0.3);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: 'Tajawal', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.3);
+        }
+
+        /* الشريط الجانبي */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: rgba(15, 26, 47, 0.95);
+            backdrop-filter: blur(10px);
+            border-left: 1px solid rgba(33, 150, 243, 0.2);
+            height: 100vh;
+            position: fixed;
+            right: 0;
+            top: 0;
+            padding: 1.5rem 1rem;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(33, 150, 243, 0.2);
+        }
+
+        .logo i {
+            margin-left: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text);
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 1rem;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--primary);
+            background: rgba(33, 150, 243, 0.1);
+        }
+
+        .nav-links a.active::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        /* المحتوى الرئيسي */
+        .main-content {
+            flex: 1;
+            margin-right: var(--sidebar-width);
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            color: var(--primary);
+            font-size: 2rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* البطاقات الإحصائية */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid rgba(33, 150, 243, 0.2);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(33, 150, 243, 0.2);
+            border-color: var(--primary);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .stat-info h3 {
+            font-size: 1.8rem;
+            margin-bottom: 0.25rem;
+            color: var(--text);
+        }
+
+        .stat-info p {
+            color: var(--text);
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        /* الأقسام */
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid rgba(33, 150, 243, 0.2);
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-header h2 {
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            width: auto;
+        }
+
+        /* الجداول */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: right;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            background: rgba(33, 150, 243, 0.1);
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .status-completed {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+
+        .status-cancelled {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--text);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            margin: 0 0.25rem;
+        }
+
+        .action-btn:hover {
+            background: rgba(33, 150, 243, 0.1);
+            color: var(--primary);
+        }
+
+        /* النماذج */
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(33, 150, 243, 0.3);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: 'Tajawal', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        /* المودال */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--dark);
+            border: 1px solid rgba(33, 150, 243, 0.3);
+            border-radius: 20px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-header h3 {
+            color: var(--primary);
+            margin: 0;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* التنبيهات */
+        .alert {
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .alert-success {
+            background: rgba(40, 167, 69, 0.2);
+            border: 1px solid rgba(40, 167, 69, 0.3);
+            color: #28a745;
+        }
+
+        .alert-error {
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+        }
+
+        .alert-warning {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+        }
+
+        /* التحميل */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(33, 150, 243, 0.3);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* مودال التأكيد */
+        .confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .confirm-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .confirm-content {
+            background: var(--dark);
+            border: 1px solid rgba(33, 150, 243, 0.3);
+            border-radius: 15px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+
+        .confirm-modal.show .confirm-content {
+            transform: scale(1);
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            justify-content: center;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+            width: auto;
+        }
+
+        /* التجاوب */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+                padding: 1rem 0.5rem;
+            }
+
+            .logo span {
+                display: none;
+            }
+
+            .nav-links a span {
+                display: none;
+            }
+
+            .main-content {
+                margin-right: 70px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .notification-container {
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+        /* قسم الدعم الفني المحسن */
+.support-chat-container {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 1.5rem;
+    height: 70vh;
+}
+
+.support-list {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 1rem;
+    overflow-y: auto;
+    border: 1px solid rgba(33, 150, 243, 0.2);
+}
+
+.support-chat {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(33, 150, 243, 0.2);
+}
+
+.support-item {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.support-item:hover {
+    background: rgba(33, 150, 243, 0.1);
+    border-color: rgba(33, 150, 243, 0.3);
+}
+
+.support-item.active {
+    background: rgba(33, 150, 243, 0.15);
+    border-color: var(--primary);
+}
+
+.support-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.support-name {
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.support-phone {
+    color: var(--text);
+    opacity: 0.8;
+    font-size: 0.9rem;
+}
+
+.support-date {
+    color: var(--text);
+    opacity: 0.6;
+    font-size: 0.8rem;
+}
+
+.support-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+}
+
+.support-status.closed {
+    background: rgba(108, 117, 125, 0.2);
+    color: #6c757d;
+}
+
+.support-status.completed {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+}
+
+.support-status.in-progress {
+    background: rgba(33, 150, 243, 0.2);
+    color: #2196F3;
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chat-user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.chat-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    margin-bottom: 1rem;
+}
+
+.message {
+    max-width: 70%;
+    padding: 0.75rem 1rem;
+    border-radius: 15px;
+    margin-bottom: 0.75rem;
+    word-wrap: break-word;
+}
+
+.message-user {
+    background: rgba(33, 150, 243, 0.2);
+    margin-left: auto;
+    border-bottom-right-radius: 5px;
+}
+
+.message-admin {
+    background: rgba(255, 255, 255, 0.1);
+    margin-right: auto;
+    border-bottom-left-radius: 5px;
+}
+
+.message-time {
+    font-size: 0.7rem;
+    opacity: 0.6;
+    margin-top: 0.25rem;
+    text-align: right;
+}
+
+.chat-input {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.chat-input textarea {
+    flex: 1;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(33, 150, 243, 0.3);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Tajawal', sans-serif;
+    resize: none;
+    min-height: 60px;
+}
+
+.chat-input button {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.chat-input button:hover {
+    background: var(--secondary);
+}
+
+.no-chat-selected {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+}
+
+.no-chat-selected i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.close-chat-btn {
+    background: rgba(244, 67, 54, 0.2);
+    color: var(--danger);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.close-chat-btn:hover {
+    background: rgba(244, 67, 54, 0.3);
+}
+
+.complete-chat-btn {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: 0.5rem;
+}
+
+.complete-chat-btn:hover {
+    background: rgba(76, 175, 80, 0.3);
+}
+
+.delete-chat-btn {
+    background: rgba(244, 67, 54, 0.2);
+    color: var(--danger);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: 0.5rem;
+}
+
+.delete-chat-btn:hover {
+    background: rgba(244, 67, 54, 0.3);
+}
+
+/* التجاوب للدعم الفني */
+@media (max-width: 768px) {
+    .support-chat-container {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+    
+    .support-list {
+        max-height: 300px;
+    }
+    
+    .support-chat {
+        min-height: 400px;
+    }
+}
+/* تنسيقات إضافية لتفاصيل الطلب */
+.order-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.order-detail-item {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid rgba(33, 150, 243, 0.2);
+}
+
+.order-detail-item strong {
+    color: var(--primary);
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.transfer-info {
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+.transfer-info h4 {
+    color: #4CAF50;
+    margin-bottom: 0.75rem;
+}
+
+.order-items {
+    margin-top: 1rem;
+}
+
+.order-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.order-item:last-child {
+    margin-bottom: 0;
+}
+    </style>
+</head>
+<body>
+    <!-- حاوية الإشعارات -->
+    <div class="notification-container" id="notificationContainer"></div>
+
+    <!-- شاشة تسجيل الدخول -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-form">
+            <div class="login-logo">
+                <i class="fas fa-gamepad"></i>
+                <span>GAMA STORE</span>
+            </div>
+            <h2 style="margin-bottom: 2rem; color: var(--primary);">تسجيل الدخول للإدارة</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">البريد الإلكتروني</label>
+                    <input type="email" id="loginEmail" required placeholder="admin@GAMAstore.com">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">كلمة المرور</label>
+                    <input type="password" id="loginPassword" required placeholder="********">
+                </div>
+                <button type="submit" class="btn btn-primary" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+                </button>
+            </form>
+            <div id="loginMessage" style="margin-top: 1rem;"></div>
+        </div>
+    </div>
+
+    <!-- لوحة التحكم -->
+    <div class="dashboard hidden" id="dashboard">
+        <!-- الشريط الجانبي -->
+        <div class="sidebar">
+            <div class="logo">
+                <i class="fas fa-gamepad"></i>
+                <span>GAMA STORE</span>
+            </div>
+            <div class="nav-links">
+                <a href="#dashboard" class="active" data-section="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>لوحة التحكم</span>
+                </a>
+                <a href="#products" data-section="products">
+                    <i class="fas fa-box"></i>
+                    <span>المنتجات</span>
+                </a>
+                <a href="#orders" data-section="orders">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>الطلبات</span>
+                </a>
+                <a href="#users" data-section="users">
+                    <i class="fas fa-users"></i>
+                    <span>إدارة المستخدمين</span>
+                </a>
+                <a href="#testimonials" data-section="testimonials">
+                    <i class="fas fa-comments"></i>
+                    <span>آراء العملاء</span>
+                </a>
+                <a href="#settings" data-section="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>الإعدادات</span>
+                </a>
+                <a href="#support" data-section="support">
+    <i class="fas fa-headset"></i>
+    <span>الدعم الفني</span>
+</a>
+                <a href="#" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>تسجيل الخروج</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- المحتوى الرئيسي -->
+        <div class="main-content">
+            <!-- قسم لوحة التحكم -->
+            <div class="section" id="dashboardSection">
+                <div class="header">
+                    <h1>لوحة تحكم GAMA STORE</h1>
+                    <div class="user-info">
+                        <div class="user-avatar" id="userAvatar">م</div>
+                        <span id="userEmail">admin@GAMAstore.com</span>
+                    </div>
+                </div>
+
+                <!-- البطاقات الإحصائية -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="ordersCount">0</h3>
+                            <p>الطلبات الجديدة</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="productsCount">0</h3>
+                            <p>المنتجات</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="customersCount">0</h3>
+                            <p>العملاء</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="revenueCount">0 ج.م</h3>
+                            <p>الإيرادات</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- الطلبات الحديثة -->
+                <div class="section">
+                    <div class="section-header">
+                        <h2>الطلبات الحديثة</h2>
+                        <a href="#orders" class="btn btn-secondary" data-section="orders">عرض الكل</a>
+                    </div>
+                    <div class="table-container">
+                        <table id="recentOrdersTable">
+                            <thead>
+                                <tr>
+                                    <th>رقم الطلب</th>
+                                    <th>العميل</th>
+                                    <th>التاريخ</th>
+                                    <th>المبلغ</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentOrdersBody">
+                                <!-- سيتم تعبئتها بالبيانات -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم المنتجات -->
+            <div class="section hidden" id="productsSection">
+                <div class="section-header">
+                    <h2>إدارة المنتجات</h2>
+                    <button class="btn btn-primary" id="addProductBtn">
+                        <i class="fas fa-plus"></i> إضافة منتج
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="productsTable">
+                        <thead>
+                            <tr>
+                                <th>الصورة</th>
+                                <th>اسم المنتج</th>
+                                <th>السعر</th>
+                                <th>النظام</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsBody">
+                            <!-- سيتم تعبئتها بالبيانات -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+<!-- قسم الطلبات -->
+<div class="section hidden" id="ordersSection">
+    <div class="section-header">
+        <h2>إدارة الطلبات</h2>
+        <div>
+            <button class="btn btn-danger" id="deleteAllOrdersBtn">
+                <i class="fas fa-trash"></i> حذف الطلبيات
+            </button>
+        </div>
+    </div>
+    <div class="table-container">
+        <table id="ordersTable">
+                        <thead>
+                            <tr>
+                                <th>رقم الطلب</th>
+                                <th>العميل</th>
+                                <th>الهاتف</th>
+                                <th>التاريخ</th>
+                                <th>المبلغ</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersBody">
+                            <!-- سيتم تعبئتها بالبيانات -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- قسم إدارة المستخدمين -->
+            <div class="section hidden" id="usersSection">
+                <div class="section-header">
+                    <h2>إدارة المستخدمين</h2>
+                </div>
+                <div class="table-container">
+                    <table id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>البريد الإلكتروني</th>
+                                <th>تاريخ التسجيل</th>
+                                <th>آخر تسجيل دخول</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersBody">
+                            <!-- سيتم تعبئتها بالبيانات -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- قسم آراء العملاء -->
+            <div class="section hidden" id="testimonialsSection">
+                <div class="section-header">
+                    <h2>آراء العملاء</h2>
+                </div>
+                <div class="table-container">
+                    <table id="testimonialsTable">
+                        <thead>
+                            <tr>
+                                <th>العميل</th>
+                                <th>التقييم</th>
+                                <th>التعليق</th>
+                                <th>التاريخ</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="testimonialsBody">
+                            <!-- سيتم تعبئتها بالبيانات -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- قسم الإعدادات -->
+            <div class="section hidden" id="settingsSection">
+                <div class="section-header">
+                    <h2>إعدادات المتجر</h2>
+                </div>
+                <form id="settingsForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="storeName">اسم المتجر</label>
+                            <input type="text" id="storeName" value="GAMA STORE">
+                        </div>
+                        <div class="form-group">
+                            <label for="storeEmail">البريد الإلكتروني</label>
+                            <input type="email" id="storeEmail" value="info@GAMAstore.com">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="whatsapp1">واتساب جاما</label>
+                            <input type="text" id="whatsapp1" value="01011907743">
+                        </div>
+                        <div class="form-group">
+                            <label for="whatsapp2">واتساب جاما</label>
+                            <input type="text" id="whatsapp2" value="01011907743">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="storeDescription">وصف المتجر</label>
+                        <textarea id="storeDescription">متجرك الموثوق لشحن الألعاب</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">حفظ الإعدادات</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال إضافة منتج -->
+    <div class="modal" id="addProductModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="productModalTitle">إضافة منتج جديد</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="productForm">
+                <input type="hidden" id="productId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="productName">اسم المنتج</label>
+                        <input type="text" id="productName" required placeholder="أدخل اسم المنتج">
+                    </div>
+                    <div class="form-group">
+                        <label for="productPrice">السعر (ج.م)</label>
+                        <input type="number" id="productPrice" required placeholder="أدخل السعر">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="productPlatform">النظام</label>
+                        <select id="productPlatform" required>
+                            <option value="">اختر النظام</option>
+                            <option value="ANDROID">ANDROID</option>
+                            <option value="IOS">IOS</option>
+                            <option value="PC">PC</option>
+                            <option value="جميع الأنظمة">جميع الأنظمة</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="productStatus">الحالة</label>
+                        <select id="productStatus" required>
+                            <option value="متوفر">متوفر</option>
+                            <option value="غير متوفر">غير متوفر</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="productDescription">الوصف</label>
+                    <textarea id="productDescription" placeholder="أدخل وصف المنتج"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="productImage">صورة المنتج (رابط)</label>
+                    <input type="url" id="productImage" placeholder="أدخل رابط الصورة">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary close-modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary" id="saveProductBtn">حفظ المنتج</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- مودال إدارة المستخدم -->
+    <div class="modal" id="userModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="userModalTitle">إدارة المستخدم</h3>
+                
+                <button class="close-modal">&times;</button>
+            </div>
+            <div id="userModalBody">
+                <!-- سيتم تعبئته بالبيانات -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary close-modal">إغلاق</button>
+                <button type="button" class="btn btn-danger" id="deleteUserBtn">حذف المستخدم</button>
+            </div>
+        </div>
+    </div>
+<!-- قسم الدعم الفني -->
+<div class="section hidden" id="supportSection">
+    <div class="section-header">
+        <h2>إدارة الدعم الفني</h2>
+        <div id="supportStats" style="display: flex; gap: 1rem; align-items: center;">
+            <span style="background: rgba(33, 150, 243, 0.2); padding: 0.5rem 1rem; border-radius: 8px;">
+                <i class="fas fa-comments"></i> 
+                <span id="totalChats">0</span> محادثة
+            </span>
+            <span style="background: rgba(255, 193, 7, 0.2); padding: 0.5rem 1rem; border-radius: 8px;">
+                <i class="fas fa-clock"></i> 
+                <span id="pendingChats">0</span> قيد الانتظار
+            </span>
+        </div>
+    </div>
+    
+    <div class="support-chat-container">
+        <div class="support-list">
+            <h3 style="margin-bottom: 1rem; color: var(--primary);">المحادثات النشطة</h3>
+            <div id="supportList">
+                <!-- سيتم تعبئتها بالبيانات -->
+            </div>
+        </div>
+        
+        <div class="support-chat">
+            <div id="chatPanel" class="hidden">
+                <div class="chat-header">
+                    <div class="chat-user-info">
+                        <div class="chat-avatar" id="chatAvatar">م</div>
+                        <div>
+                            <div id="chatUserName" style="font-weight: 700;"></div>
+                            <div id="chatUserPhone" style="font-size: 0.9rem; opacity: 0.8;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <button class="complete-chat-btn" id="completeChatBtn">
+                            <i class="fas fa-check"></i> إنهاء
+                        </button>
+                        <button class="close-chat-btn" id="closeChatBtn">
+                            <i class="fas fa-times"></i> إغلاق
+                        </button>
+                        <button class="delete-chat-btn" id="deleteChatBtn">
+                            <i class="fas fa-trash"></i> حذف
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="chat-messages" id="chatMessages">
+                    <!-- سيتم تعبئتها بالرسائل -->
+                </div>
+                
+                <div class="chat-input">
+                    <textarea id="messageInput" placeholder="اكتب رسالتك هنا..."></textarea>
+                    <button id="sendMessageBtn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="noChatSelected" class="no-chat-selected">
+                <i class="fas fa-comments"></i>
+                <h3>اختر محادثة لعرضها</h3>
+                <p>اختر أحد طلبات الدعم من القائمة لعرض المحادثة والرد عليها</p>
+            </div>
+        </div>
+    </div>
+</div>
+    <!-- مودال التأكيد -->
+    <div class="confirm-modal" id="confirmModal">
+        <div class="confirm-content">
+            <h3 id="confirmTitle">تأكيد الإجراء</h3>
+            <p id="confirmMessage">هل أنت متأكد من تنفيذ هذا الإجراء؟</p>
+            <div class="confirm-buttons">
+                <button class="btn btn-secondary" id="cancelConfirm">إلغاء</button>
+                <button class="btn btn-danger" id="confirmAction">تأكيد</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- تكوين Firebase -->
+    <script>
+        // استبدل هذا التكوين بتكوين Firebase الخاص بك
+        const firebaseConfig = {
+            apiKey: "AIzaSyAd5KNh5H6KaQ9nv8FP3keyFRh28zSwfLM",
+            authDomain: "gama-xiter.firebaseapp.com",
+            projectId: "gama-xiter",
+            storageBucket: "gama-xiter.firebasestorage.app",
+            messagingSenderId: "979348178199",
+            appId: "1:979348178199:web:dd66b3d0d00b76fe61a352",
+            measurementId: "G-4Q4P3GTJN5"
+        };
+
+        // تهيئة Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+            </script>
+
+    <script>
+        // 🔐 دالة التحقق من صلاحية الأدمن
+        async function checkAdminAccess(user) {
+            try {
+                console.log('🔑 التحقق من صلاحية المستخدم:', user.email);
+                
+                const userDoc = await db.collection("users").doc(user.uid).get();
+                
+                if (!userDoc.exists) {
+                    console.log('❌ المستخدم غير موجود في قاعدة البيانات');
+                    return false;
+                }
+                
+                const userData = userDoc.data();
+                console.log('🎭 دور المستخدم:', userData.role);
+                
+                if (userData.role === "admin") {
+                    console.log('✅ تحقق من الصلاحية - أدمن مصرح له');
+                    return true;
+                } else {
+                    console.log('❌ تحقق من الصلاحية - ليس أدمن');
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ خطأ في التحقق من الصلاحية:', error);
+                return false;
+            }
+        }
+
+        // 🔧 دالة إنشاء أدمن تلقائي (للإصلاح)
+        async function createAdminAuto() {
+            const user = auth.currentUser;
+            if (!user) return;
+            
+            try {
+                await db.collection("users").doc(user.uid).set({
+                    email: user.email,
+                    name: "Administrator",
+                    role: "admin",
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    isActive: true,
+                    permissions: ["all"]
+                }, { merge: true });
+                
+                showNotification('تم الإصلاح', 'تم تعيينك كأدمن بنجاح', 'success');
+                setTimeout(() => location.reload(), 2000);
+            } catch (error) {
+                console.error('❌ خطأ في الإصلاح:', error);
+                showNotification('خطأ', 'فشل في الإصلاح', 'error');
+            }
+        }
+
+        // 🛠️ إضافة زر الإصلاح
+        function addFixButton() {
+            if (document.getElementById('adminFixBtn')) return;
+            
+            const button = document.createElement('button');
+            button.id = 'adminFixBtn';
+            button.innerHTML = '🛠️ إصلاح الصلاحية';
+            button.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                background: #FF9800;
+                color: white;
+                border: none;
+                padding: 12px 18px;
+                border-radius: 25px;
+                cursor: pointer;
+                z-index: 10000;
+                font-size: 14px;
+                box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+                font-family: 'Tajawal', sans-serif;
+            `;
+            button.onclick = createAdminAuto;
+            document.body.appendChild(button);
+        }
+
+        // 🗃️ دوال إدارة قاعدة البيانات للدعم الفني
+        // دالة لإنشاء هيكل بيانات اختبار
+        function createTestSupportData() {
+            console.log('🔄 جاري إنشاء بيانات اختبار للدعم الفني...');
+            
+            const chatData = {
+                name: "محمد أحمد",
+                phone: "01011907743",
+                status: "pending",
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            // إنشاء محادثة جديدة
+            db.collection("support_requests").add(chatData)
+                .then((docRef) => {
+                    const chatId = docRef.id;
+                    console.log('✅ تم إنشاء محادثة جديدة:', chatId);
+                    
+                    // إضافة رسالة من المستخدم
+                    return db.collection("support_requests").doc(chatId).collection("messages").add({
+                        text: "مرحباً، أريد مساعدة في شحن لعبة فورتنايت",
+                        sender: "user",
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                })
+                .then(() => {
+                    console.log('✅ تم إضافة رسالة اختبار');
+                    showNotification('نجاح', 'تم إنشاء بيانات اختبار للدعم الفني', 'success');
+                    
+                    // إعادة تحميل قائمة الدعم
+                    loadSupportRequests();
+                })
+                .catch((error) => {
+                    console.error('❌ خطأ في إنشاء بيانات الاختبار:', error);
+                    showNotification('خطأ', 'فشل في إنشاء بيانات الاختبار', 'error');
+                });
+        }
+
+        // دالة للتحقق من هيكل البيانات
+        async function checkDatabaseStructure() {
+            try {
+                console.log('🔍 التحقق من هيكل قاعدة البيانات...');
+                
+                // التحقق من وجود مجموعة support_requests
+                const supportSnapshot = await db.collection("support_requests").limit(1).get();
+                
+                if (supportSnapshot.empty) {
+                    console.log('⚠️ مجموعة support_requests فارغة');
+                    return false;
+                }
+                
+                // التحقق من وجود رسائل في أول محادثة
+                const firstChat = supportSnapshot.docs[0];
+                const messagesSnapshot = await db.collection("support_requests")
+                    .doc(firstChat.id)
+                    .collection("messages")
+                    .limit(1)
+                    .get();
+                
+                console.log('📊 إحصائيات قاعدة البيانات:');
+                console.log('- عدد المحادثات:', supportSnapshot.size);
+                console.log('- عدد الرسائل في المحادثة الأولى:', messagesSnapshot.size);
+                
+                return true;
+            } catch (error) {
+                console.error('❌ خطأ في التحقق من الهيكل:', error);
+                return false;
+            }
+        }
+
+        // دالة لمسح بيانات الاختبار
+        function clearTestData() {
+            showConfirmModal(
+                'مسح بيانات الاختبار',
+                'هل أنت متأكد من مسح جميع بيانات الدعم الفني؟ هذا الإجراء لا يمكن التراجع عنه!',
+                async () => {
+                    try {
+                        console.log('🗑️ جاري مسح بيانات الاختبار...');
+                        
+                        // الحصول على جميع محادثات الدعم
+                        const snapshot = await db.collection("support_requests").get();
+                        
+                        const deletePromises = [];
+                        snapshot.forEach((doc) => {
+                            // مسح جميع الرسائل أولاً
+                            const messagesPromise = db.collection("support_requests")
+                                .doc(doc.id)
+                                .collection("messages")
+                                .get()
+                                .then((messagesSnapshot) => {
+                                    const messageDeletes = [];
+                                    messagesSnapshot.forEach((msgDoc) => {
+                                        messageDeletes.push(msgDoc.ref.delete());
+                                    });
+                                    return Promise.all(messageDeletes);
+                                })
+                                .then(() => {
+                                    // ثم مسح المحادثة نفسها
+                                    return doc.ref.delete();
+                                });
+                            
+                            deletePromises.push(messagesPromise);
+                        });
+                        
+                        await Promise.all(deletePromises);
+                        console.log('✅ تم مسح جميع بيانات الدعم الفني');
+                        showNotification('تم المسح', 'تم مسح جميع بيانات الدعم الفني بنجاح', 'success');
+                        
+                        // إعادة تحميل القائمة
+                        loadSupportRequests();
+                    } catch (error) {
+                        console.error('❌ خطأ في مسح البيانات:', error);
+                        showNotification('خطأ في المسح', 'تعذر مسح البيانات', 'error');
+                    }
+                }
+            );
+        }
+
+        // إضافة أزرار التحكم في قاعدة البيانات
+        // function addDatabaseControls() {
+        //     if (document.getElementById('dbControls')) return;
+            
+        //     const controlsDiv = document.createElement('div');
+        //     controlsDiv.id = 'dbControls';
+        //     controlsDiv.style.cssText = `
+        //         position: fixed;
+        //         bottom: 70px;
+        //         left: 20px;
+        //         background: rgba(15, 26, 47, 0.95);
+        //         border: 1px solid rgba(33, 150, 243, 0.3);
+        //         border-radius: 10px;
+        //         padding: 15px;
+        //         z-index: 10000;
+        //         display: flex;
+        //         flex-direction: column;
+        //         gap: 10px;
+        //         min-width: 200px;
+        //         backdrop-filter: blur(10px);
+        //     `;
+            
+        //     controlsDiv.innerHTML = `
+        //         <h4 style="margin: 0 0 10px 0; color: var(--primary); text-align: center;">تحكم قاعدة البيانات</h4>
+        //         <button id="createTestData" style="
+        //             background: var(--success);
+        //             color: white;
+        //             border: none;
+        //             padding: 8px 12px;
+        //             border-radius: 5px;
+        //             cursor: pointer;
+        //             font-family: 'Tajawal', sans-serif;
+        //         ">إنشاء بيانات اختبار</button>
+        //         <button id="checkStructure" style="
+        //             background: var(--primary);
+        //             color: white;
+        //             border: none;
+        //             padding: 8px 12px;
+        //             border-radius: 5px;
+        //             cursor: pointer;
+        //             font-family: 'Tajawal', sans-serif;
+        //         ">فحص الهيكل</button>
+        //         <button id="clearTestData" style="
+        //             background: var(--danger);
+        //             color: white;
+        //             border: none;
+        //             padding: 8px 12px;
+        //             border-radius: 5px;
+        //             cursor: pointer;
+        //             font-family: 'Tajawal', sans-serif;
+        //         ">مسح البيانات</button>
+        //     `;
+            
+            document.body.appendChild(controlsDiv);
+            
+            // ربط الأحداث
+            document.getElementById('createTestData').addEventListener('click', createTestSupportData);
+            document.getElementById('checkStructure').addEventListener('click', checkDatabaseStructure);
+            document.getElementById('clearTestData').addEventListener('click', clearTestData);
+        
+    </script>
+
+    <script>
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 لوحة التحكم اتحملت');
+            
+            // عناصر DOM
+            const loginContainer = document.getElementById('loginContainer');
+            const dashboard = document.getElementById('dashboard');
+            const loginForm = document.getElementById('loginForm');
+            const loginBtn = document.getElementById('loginBtn');
+            const loginMessage = document.getElementById('loginMessage');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const userAvatar = document.getElementById('userAvatar');
+            const userEmail = document.getElementById('userEmail');
+            
+            // الإحصائيات
+            const ordersCount = document.getElementById('ordersCount');
+            const productsCount = document.getElementById('productsCount');
+            const customersCount = document.getElementById('customersCount');
+            const revenueCount = document.getElementById('revenueCount');
+            
+            // الجداول
+            const recentOrdersBody = document.getElementById('recentOrdersBody');
+            const productsBody = document.getElementById('productsBody');
+            const ordersBody = document.getElementById('ordersBody');
+            const usersBody = document.getElementById('usersBody');
+            const testimonialsBody = document.getElementById('testimonialsBody');
+            
+            // المودالات
+            const addProductModal = document.getElementById('addProductModal');
+            const addProductBtn = document.getElementById('addProductBtn');
+            const closeModalBtns = document.querySelectorAll('.close-modal');
+            const productForm = document.getElementById('productForm');
+            const productModalTitle = document.getElementById('productModalTitle');
+            const saveProductBtn = document.getElementById('saveProductBtn');
+            
+            // مودال إدارة المستخدمين
+            const userModal = document.getElementById('userModal');
+            const userModalTitle = document.getElementById('userModalTitle');
+            const userModalBody = document.getElementById('userModalBody');
+            const deleteUserBtn = document.getElementById('deleteUserBtn');
+            
+            // عناصر الدعم الفني
+            const supportList = document.getElementById('supportList');
+            const chatPanel = document.getElementById('chatPanel');
+            const noChatSelected = document.getElementById('noChatSelected');
+            const chatMessages = document.getElementById('chatMessages');
+            const messageInput = document.getElementById('messageInput');
+            const sendMessageBtn = document.getElementById('sendMessageBtn');
+            const chatUserName = document.getElementById('chatUserName');
+            const chatUserPhone = document.getElementById('chatUserPhone');
+            const chatAvatar = document.getElementById('chatAvatar');
+            const completeChatBtn = document.getElementById('completeChatBtn');
+            const closeChatBtn = document.getElementById('closeChatBtn');
+            const deleteChatBtn = document.getElementById('deleteChatBtn');
+            const totalChats = document.getElementById('totalChats');
+            const pendingChats = document.getElementById('pendingChats');
+            let currentChatId = null;
+            let supportRequests = [];
+
+            // مودال التأكيد
+            const confirmModal = document.getElementById('confirmModal');
+            const confirmTitle = document.getElementById('confirmTitle');
+            const confirmMessage = document.getElementById('confirmMessage');
+            const cancelConfirm = document.getElementById('cancelConfirm');
+            const confirmAction = document.getElementById('confirmAction');
+            
+            // الأقسام
+            const sections = document.querySelectorAll('.section');
+            const navLinks = document.querySelectorAll('.nav-links a');
+            
+            // حالة التطبيق
+            let currentUser = null;
+            let products = [];
+            let orders = [];
+            let users = [];
+            let testimonials = [];
+            let pendingAction = null;
+            
+            // نظام الإشعارات
+            function showNotification(title, message, type = 'success', duration = 5000) {
+                const notificationContainer = document.getElementById('notificationContainer');
+                if (!notificationContainer) return;
+                
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.innerHTML = `
+                    <div class="notification-icon">
+                        <i class="fas fa-${getNotificationIcon(type)}"></i>
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-title">${title}</div>
+                        <div class="notification-message">${message}</div>
+                    </div>
+                    <button class="notification-close" onclick="this.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                
+                notificationContainer.appendChild(notification);
+                
+                // Show animation
+                setTimeout(() => {
+                    notification.classList.add('show');
+                }, 10);
+                
+                // Auto remove after duration
+                if (duration > 0) {
+                    setTimeout(() => {
+                        notification.classList.add('hide');
+                        setTimeout(() => {
+                            if (notification.parentElement) {
+                                notification.remove();
+                            }
+                        }, 400);
+                    }, duration);
+                }
+                
+                return notification;
+            }
+
+            function getNotificationIcon(type) {
+                const icons = {
+                    success: 'check-circle',
+                    error: 'exclamation-circle',
+                    warning: 'exclamation-triangle',
+                    info: 'info-circle'
+                };
+                return icons[type] || 'info-circle';
+            }
+
+            // إعداد مستمعات Firebase في الوقت الحقيقي
+            function setupRealTimeListeners() {
+                // مستمع للمنتجات
+                db.collection("products").onSnapshot((snapshot) => {
+                    console.log("🔄 تم تحديث المنتجات تلقائياً");
+                    loadProducts();
+                    showNotification('تحديث تلقائي', 'تم تحديث قائمة المنتجات', 'info', 3000);
+                }, (error) => {
+                    console.error("❌ خطأ في الاستماع للمنتجات:", error);
+                });
+
+                // مستمع للطلبات
+                db.collection("orders").onSnapshot((snapshot) => {
+                    console.log("🔄 تم تحديث الطلبات تلقائياً");
+                    loadOrders();
+                    showNotification('تحديث تلقائي', 'تم تحديث قائمة الطلبات', 'info', 3000);
+                }, (error) => {
+                    console.error("❌ خطأ في الاستماع للطلبات:", error);
+                });
+
+                // مستمع للمستخدمين
+                db.collection("users").onSnapshot((snapshot) => {
+                    console.log("🔄 تم تحديث المستخدمين تلقائياً");
+                    loadUsers();
+                    showNotification('تحديث تلقائي', 'تم تحديث قائمة المستخدمين', 'info', 3000);
+                }, (error) => {
+                    console.error("❌ خطأ في الاستماع للمستخدمين:", error);
+                });
+
+                // مستمع لآراء العملاء
+                db.collection("testimonials").onSnapshot((snapshot) => {
+                    console.log("🔄 تم تحديث آراء العملاء تلقائياً");
+                    loadTestimonials();
+                    showNotification('تحديث تلقائي', 'تم تحديث آراء العملاء', 'info', 3000);
+                }, (error) => {
+                    console.error("❌ خطأ في الاستماع لآراء العملاء:", error);
+                });
+
+                // مستمع لطلبات الدعم الفني
+                db.collection("support_requests").onSnapshot((snapshot) => {
+                    console.log("🔄 تم تحديث طلبات الدعم تلقائياً");
+                    loadSupportRequests();
+                }, (error) => {
+                    console.error("❌ خطأ في الاستماع لطلبات الدعم:", error);
+                });
+            }
+            
+            // التحقق من حالة المستخدم
+            // التحقق من حالة المستخدم مع التحقق من الصلاحية
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    console.log('🔑 تم تسجيل الدخول:', user.email);
+                    
+                    // 🔐 التحقق من صلاحية الأدمن
+                    const isAdmin = await checkAdminAccess(user);
+                    
+                    if (isAdmin) {
+                        // ✅ أدمن مصرح له
+                        currentUser = user;
+                        showDashboard();
+                        loadData();
+                        setupRealTimeListeners();
+                    } else {
+                        // ❌ ليس أدمن - منع الوصول
+                        console.log('❌ تم منع الوصول - ليس أدمن');
+                        showNotification('غير مصرح', 'ليس لديك صلاحية الوصول كأدمن', 'error');
+                        
+                        // إظهار زر الإصلاح
+                        setTimeout(() => {
+                            addFixButton();
+                        }, 2000);
+                        
+                        // تسجيل خروج تلقائي بعد 5 ثواني
+                        setTimeout(() => {
+                            auth.signOut();
+                            window.location.href = '/';
+                        }, 5000);
+                    }
+                } else {
+                    // المستخدم غير مسجل الدخول
+                    showLogin();
+                }
+            });
+            
+            // تسجيل الدخول
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                
+                loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التسجيل...';
+                loginBtn.disabled = true;
+                
+                auth.signInWithEmailAndPassword(email, password)
+                    .then((userCredential) => {
+                        // تم تسجيل الدخول بنجاح
+                        showNotification('تم تسجيل الدخول', 'مرحباً بك في لوحة التحكم', 'success');
+                        console.log('✅ تم تسجيل الدخول:', userCredential.user.email);
+                    })
+                    .catch((error) => {
+                        // خطأ في تسجيل الدخول
+                        showNotification('خطأ في التسجيل', error.message, 'error');
+                        console.error('❌ خطأ في تسجيل الدخول:', error);
+                    })
+                    .finally(() => {
+                        loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> تسجيل الدخول';
+                        loginBtn.disabled = false;
+                    });
+            });
+            
+            // تسجيل الخروج
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                showConfirmModal(
+                    'تسجيل الخروج',
+                    'هل أنت متأكد من تسجيل الخروج؟',
+                    () => {
+                        auth.signOut().then(() => {
+                            showNotification('تم تسجيل الخروج', 'تم تسجيل الخروج بنجاح', 'info');
+                            console.log('✅ تم تسجيل الخروج');
+                        });
+                    }
+                );
+            });
+            
+            // إظهار لوحة التحكم
+            // إظهار لوحة التحكم
+            function showDashboard() {
+                loginContainer.classList.add('hidden');
+                dashboard.classList.remove('hidden');
+                userEmail.textContent = currentUser.email;
+                userAvatar.textContent = currentUser.email.charAt(0).toUpperCase();
+                
+                // 🛠️ إظهار زر الإصلاح (في حال احتجنا له لاحقاً)
+                setTimeout(() => {
+                    addFixButton();
+                }, 1000);
+
+                // 🗃️ إظهار تحكم قاعدة البيانات
+                setTimeout(() => {
+                    addDatabaseControls();
+                    console.log('🎯 لوحة تحكم قاعدة البيانات جاهزة');
+                    
+                    // التحقق التلقائي من الهيكل
+                    setTimeout(() => {
+                        checkDatabaseStructure().then(isValid => {
+                            if (!isValid) {
+                                console.log('💡 يمكنك استخدام زر "إنشاء بيانات اختبار" لبدء الاختبار');
+                            }
+                        });
+                    }, 2000);
+                }, 3000);
+            }
+            // إظهار شاشة تسجيل الدخول
+            function showLogin() {
+                loginContainer.classList.remove('hidden');
+                dashboard.classList.add('hidden');
+            }
+            
+            // تحميل البيانات
+            function loadData() {
+                loadProducts();
+                loadOrders();
+                loadUsers();
+                loadTestimonials();
+                updateStats();
+            }
+            
+            // تحميل المنتجات
+            function loadProducts() {
+                showLoading(productsBody);
+                
+                db.collection("products").orderBy("name").get()
+                    .then((querySnapshot) => {
+                        products = [];
+                        productsBody.innerHTML = '';
+                        
+                        if (querySnapshot.empty) {
+                            productsBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">لا توجد منتجات</td></tr>';
+                            return;
+                        }
+                        
+                        querySnapshot.forEach((doc) => {
+                            const product = { id: doc.id, ...doc.data() };
+                            products.push(product);
+                            
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>
+                                    ${product.image ? 
+                                        `<img src="${product.image}" alt="${product.name}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 5px;">` :
+                                        `<div style="width: 40px; height: 40px; background: #2196F3; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: white;">
+                                            <i class="fas fa-box"></i>
+                                        </div>`
+                                    }
+                                </td>
+                                <td>${product.name}</td>
+                                <td>${product.price} ج.م</td>
+                                <td>${product.platform || 'غير محدد'}</td>
+                                <td><span class="status ${product.status === 'متوفر' ? 'status-completed' : 'status-pending'}">${product.status || 'غير متوفر'}</span></td>
+                                <td>
+                                    <button class="action-btn edit-product" data-id="${doc.id}" title="تعديل">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="action-btn delete-product" data-id="${doc.id}" data-name="${product.name}" title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            `;
+                            productsBody.appendChild(row);
+                        });
+                        
+                        // ربط أحداث الأزرار
+                        document.querySelectorAll('.edit-product').forEach(btn => {
+                            btn.addEventListener('click', function() {
+                                const productId = this.getAttribute('data-id');
+                                editProduct(productId);
+                            });
+                        });
+                        
+                        document.querySelectorAll('.delete-product').forEach(btn => {
+                            btn.addEventListener('click', function() {
+                                const productId = this.getAttribute('data-id');
+                                const productName = this.getAttribute('data-name');
+                                showConfirmModal(
+                                    'حذف المنتج',
+                                    `هل أنت متأكد من حذف المنتج "${productName}"؟ لا يمكن التراجع عن هذا الإجراء.`,
+                                    () => deleteProduct(productId, productName)
+                                );
+                            });
+                        });
+                        
+                        productsCount.textContent = products.length;
+                    })
+                    .catch((error) => {
+                        console.error("❌ خطأ في تحميل المنتجات:", error);
+                        productsBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">حدث خطأ في تحميل المنتجات</td></tr>';
+                        showNotification('خطأ في التحميل', 'تعذر تحميل المنتجات', 'error');
+                    });
+            }
+            
+            // تحميل الطلبات
+            function loadOrders() {
+                showLoading(ordersBody);
+                showLoading(recentOrdersBody);
+                
+                db.collection("orders").orderBy("timestamp", "desc").limit(10).get()
+                    .then((querySnapshot) => {
+                        orders = [];
+                        ordersBody.innerHTML = '';
+                        recentOrdersBody.innerHTML = '';
+                        
+                        if (querySnapshot.empty) {
+                            ordersBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">لا توجد طلبات</td></tr>';
+                            recentOrdersBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">لا توجد طلبات</td></tr>';
+                            return;
+                        }
+                        
+                        let totalRevenue = 0;
+                        let pendingOrders = 0;
+                        
+                        querySnapshot.forEach((doc) => {
+                            const order = { id: doc.id, ...doc.data() };
+                            orders.push(order);
+                            
+                            if (order.status === 'pending') {
+                                pendingOrders++;
+                            }
+                            
+                            if (order.total) {
+                                totalRevenue += parseFloat(order.total);
+                            }
+                            
+                            const date = order.timestamp?.toDate ? 
+                                        order.timestamp.toDate().toLocaleDateString('ar-EG') : 
+                                        new Date().toLocaleDateString('ar-EG');
+                            
+// في دالة loadOrders، تحديث عرض الطلبات لتشمل البيانات الجديدة
+const orderRow = `
+    <tr>
+        <td>
+            <div style="font-weight: 700; color: var(--primary);">
+                ${order.orderNumber || 'GS-' + doc.id.substring(0, 8).toUpperCase()}
+            </div>
+            ${!order.orderNumber ? '<small style="color: #666;">(مؤقت)</small>' : ''}
+        </td>
+        <td>
+            <div>${order.customerName}</div>
+            ${order.transferFromPhone ? `<small style="color: var(--primary);">📱 ${order.transferFromPhone}</small>` : ''}
+        </td>
+        <td>${order.customerPhone}</td>
+        <td>
+            <div>${date}</div>
+            ${order.transferTime ? `<small style="color: #4CAF50;">🕒 ${order.transferTime.toDate ? order.transferTime.toDate().toLocaleTimeString('ar-EG') : ''}</small>` : ''}
+        </td>
+        <td>${order.total || 0} ج.م</td>
+        <td><span class="status ${getStatusClass(order.status)}">${getStatusText(order.status)}</span></td>
+        <td>
+            <button class="action-btn view-order" data-id="${doc.id}" title="عرض التفاصيل">
+                <i class="fas fa-eye"></i>
+            </button>
+            <button class="action-btn update-status" data-id="${doc.id}" title="تغيير الحالة">
+                <i class="fas fa-edit"></i>
+            </button>
+        </td>
+    </tr>
+`;
+                            
+                            ordersBody.innerHTML += orderRow;
+                            
+                            // إضافة للطلبات الحديثة (أول 5 طلبات فقط)
+                            if (recentOrdersBody.children.length < 5) {
+                                recentOrdersBody.innerHTML += orderRow;
+                            }
+                        });
+                        
+                        ordersCount.textContent = pendingOrders;
+                        revenueCount.textContent = totalRevenue.toFixed(2) + ' ج.م';
+                        
+                        // ربط أحداث الأزرار
+                        document.querySelectorAll('.view-order').forEach(btn => {
+                            btn.addEventListener('click', function() {
+                                const orderId = this.getAttribute('data-id');
+                                viewOrder(orderId);
+                            });
+                        });
+                        
+                        document.querySelectorAll('.update-status').forEach(btn => {
+                            btn.addEventListener('click', function() {
+                                const orderId = this.getAttribute('data-id');
+                                updateOrderStatus(orderId);
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.error("❌ خطأ في تحميل الطلبات:", error);
+                        ordersBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">حدث خطأ في تحميل الطلبات</td></tr>';
+                        recentOrdersBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">حدث خطأ في تحميل الطلبات</td></tr>';
+                        showNotification('خطأ في التحميل', 'تعذر تحميل الطلبات', 'error');
+                    });
+            }
+            
+            // تحميل المستخدمين
+            function loadUsers() {
+                showLoading(usersBody);
+                
+                db.collection("users").orderBy("createdAt", "desc").get()
+                    .then((querySnapshot) => {
+                        users = [];
+                        usersBody.innerHTML = '';
+                        
+                        if (querySnapshot.empty) {
+                            usersBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">لا توجد حسابات مستخدمين</td></tr>';
+                            return;
+                        }
+                        
+                        querySnapshot.forEach((doc) => {
+                            const user = { id: doc.id, ...doc.data() };
+                            users.push(user);
+                            
+                            const createDate = user.createdAt?.toDate ? 
+                                user.createdAt.toDate().toLocaleDateString('ar-EG') : 
+                                'غير معروف';
+                            
+                            const lastSignIn = user.lastSignIn?.toDate ? 
+                                user.lastSignIn.toDate().toLocaleDateString('ar-EG') : 
+                                'غير معروف';
+                            
+                            const status = user.disabled ? 'محظور' : 'نشط';
+                            
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${user.email}</td>
+                                <td>${createDate}</td>
+                                <td>${lastSignIn}</td>
+                                <td><span class="status ${user.disabled ? 'status-cancelled' : 'status-completed'}">${status}</span></td>
+                                <td>
+                                    <button class="action-btn manage-user" data-id="${doc.id}" data-email="${user.email}" data-disabled="${user.disabled}" title="إدارة">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                </td>
+                            `;
+                            usersBody.appendChild(row);
+                        });
+                        
+                        // ربط أحداث الأزرار
+                        document.querySelectorAll('.manage-user').forEach(btn => {
+                            btn.addEventListener('click', function() {
+                                const userId = this.getAttribute('data-id');
+                                const userEmail = this.getAttribute('data-email');
+                                const disabled = this.getAttribute('data-disabled') === 'true';
+                                manageUser(userId, userEmail, disabled);
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.error("❌ خطأ في تحميل المستخدمين:", error);
+                        usersBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">حدث خطأ في تحميل المستخدمين</td></tr>';
+                        showNotification('خطأ في التحميل', 'تعذر تحميل المستخدمين', 'error');
+                    });
+            }
+            
+            // تحميل آراء العملاء
+            function loadTestimonials() {
+                showLoading(testimonialsBody);
+                
+                db.collection("testimonials").orderBy("timestamp", "desc").get()
+                    .then((querySnapshot) => {
+                        testimonials = [];
+                        testimonialsBody.innerHTML = '';
+                        
+                        if (querySnapshot.empty) {
+                            testimonialsBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">لا توجد آراء</td></tr>';
+                            return;
+                        }
+                        
+                        querySnapshot.forEach((doc) => {
+                            const testimonial = { id: doc.id, ...doc.data() };
+                            testimonials.push(testimonial);
+                            
+                            const date = testimonial.timestamp?.toDate ? 
+                                        testimonial.timestamp.toDate().toLocaleDateString('ar-EG') : 
+                                        new Date().toLocaleDateString('ar-EG');
+                            
+                            const stars = '★'.repeat(testimonial.rating || 5) + '☆'.repeat(5 - (testimonial.rating || 5));
+                            
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${testimonial.name}</td>
+                                <td>${stars}</td>
+                                <td>${testimonial.review.substring(0, 50)}${testimonial.review.length > 50 ? '...' : ''}</td>
+                                <td>${date}</td>
+                                <td>
+                                    <button class="action-btn delete-testimonial" data-id="${doc.id}" data-name="${testimonial.name}" title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            `;
+                            testimonialsBody.appendChild(row);
+                        });
+                        
+                        customersCount.textContent = testimonials.length;
+                        
+                        // ربط أحداث الأزرار
+                        document.querySelectorAll('.delete-testimonial').forEach(btn => {
+                            btn.addEventListener('click', function() {
+                                const testimonialId = this.getAttribute('data-id');
+                                const testimonialName = this.getAttribute('data-name');
+                                showConfirmModal(
+                                    'حذف الرأي',
+                                    `هل أنت متأكد من حذف رأي "${testimonialName}"؟ لا يمكن التراجع عن هذا الإجراء.`,
+                                    () => deleteTestimonial(testimonialId, testimonialName)
+                                );
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.error("❌ خطأ في تحميل آراء العملاء:", error);
+                        testimonialsBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">حدث خطأ في تحميل آراء العملاء</td></tr>';
+                        showNotification('خطأ في التحميل', 'تعذر تحميل آراء العملاء', 'error');
+                    });
+            }
+            
+            // تحديث الإحصائيات
+            function updateStats() {
+                            }
+
+            // حذف جميع الطلبيات
+            function deleteAllOrders() {
+                showConfirmModal(
+                    'حذف جميع الطلبيات',
+                    'هل أنت متأكد من حذف جميع الطلبيات؟ هذا الإجراء لا يمكن التراجع عنه!',
+                    () => {
+                        // عرض مؤشر التحميل
+                        const ordersBody = document.getElementById('ordersBody');
+                        ordersBody.innerHTML = `
+                            <tr>
+                                <td colspan="7" class="loading">
+                                    <div class="loading-spinner"></div>
+                                    <div style="margin-top: 1rem;">جاري حذف جميع الطلبيات...</div>
+                                </td>
+                            </tr>
+                        `;
+                        
+                        // الحصول على جميع الطلبيات وحذفها
+                        db.collection("orders").get()
+                            .then((querySnapshot) => {
+                                const deletePromises = [];
+                                
+                                querySnapshot.forEach((doc) => {
+                                    deletePromises.push(db.collection("orders").doc(doc.id).delete());
+                                });
+                                
+                                return Promise.all(deletePromises);
+                            })
+                            .then(() => {
+                                showNotification('تم الحذف', 'تم حذف جميع الطلبيات بنجاح', 'success');
+                                console.log("✅ تم حذف جميع الطلبيات");
+                                
+                                // إعادة تحميل الطلبيات لتحديث الجدول
+                                loadOrders();
+                            })
+                            .catch((error) => {
+                                console.error("❌ خطأ في حذف الطلبيات:", error);
+                                showNotification('خطأ في الحذف', 'حدث خطأ أثناء حذف الطلبيات', 'error');
+                                
+                                // إعادة تحميل الطلبيات في حالة الخطأ
+                                loadOrders();
+                            });
+                    }
+                );
+            }
+
+            // ربط زر حذف جميع الطلبيات
+            document.getElementById('deleteAllOrdersBtn').addEventListener('click', deleteAllOrders);
+
+            // تحديث الإحصائيات
+            function updateStats() {
+                // تم تحديثها في الدوال السابقة
+            }
+            
+            // فتح مودال إضافة منتج
+            addProductBtn.addEventListener('click', function() {
+                productModalTitle.textContent = 'إضافة منتج جديد';
+                productForm.reset();
+                document.getElementById('productId').value = '';
+                addProductModal.classList.add('show');
+            });
+            
+            // إغلاق المودال
+            closeModalBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    addProductModal.classList.remove('show');
+                    userModal.classList.remove('show');
+                });
+            });
+            
+            // إغلاق المودال بالنقر خارج المحتوى
+            addProductModal.addEventListener('click', function(e) {
+                if (e.target === addProductModal) {
+                    addProductModal.classList.remove('show');
+                }
+            });
+            
+            userModal.addEventListener('click', function(e) {
+                if (e.target === userModal) {
+                    userModal.classList.remove('show');
+                }
+            });
+            
+            // حفظ المنتج
+            productForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const productId = document.getElementById('productId').value;
+                const productName = document.getElementById('productName').value;
+                const productData = {
+                    name: productName,
+                    price: parseFloat(document.getElementById('productPrice').value),
+                    platform: document.getElementById('productPlatform').value,
+                    status: document.getElementById('productStatus').value,
+                    description: document.getElementById('productDescription').value,
+                    image: document.getElementById('productImage').value,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                saveProductBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+                saveProductBtn.disabled = true;
+                
+                if (productId) {
+                    // تحديث منتج موجود
+                    db.collection("products").doc(productId).update(productData)
+                        .then(() => {
+                            showNotification('تم التحديث', `تم تحديث المنتج "${productName}" بنجاح`, 'success');
+                            console.log("✅ تم تحديث المنتج:", productId);
+                            addProductModal.classList.remove('show');
+                        })
+                        .catch((error) => {
+                            console.error("❌ خطأ في تحديث المنتج:", error);
+                            showNotification('خطأ في التحديث', 'حدث خطأ أثناء تحديث المنتج', 'error');
+                        })
+                        .finally(() => {
+                            saveProductBtn.innerHTML = 'حفظ المنتج';
+                            saveProductBtn.disabled = false;
+                        });
+                } else {
+                    // إضافة منتج جديد
+                    db.collection("products").add(productData)
+                        .then((docRef) => {
+                            showNotification('تم الإضافة', `تم إضافة المنتج "${productName}" بنجاح`, 'success');
+                            console.log("✅ تم إضافة المنتج:", docRef.id);
+                            addProductModal.classList.remove('show');
+                        })
+                        .catch((error) => {
+                            console.error("❌ خطأ في إضافة المنتج:", error);
+                            showNotification('خطأ في الإضافة', 'حدث خطأ أثناء إضافة المنتج', 'error');
+                        })
+                        .finally(() => {
+                            saveProductBtn.innerHTML = 'حفظ المنتج';
+                            saveProductBtn.disabled = false;
+                        });
+                }
+            });
+            
+            // تحرير منتج
+            function editProduct(productId) {
+                const product = products.find(p => p.id === productId);
+                if (product) {
+                    productModalTitle.textContent = 'تعديل المنتج';
+                    document.getElementById('productId').value = product.id;
+                    document.getElementById('productName').value = product.name;
+                    document.getElementById('productPrice').value = product.price;
+                    document.getElementById('productPlatform').value = product.platform || '';
+                    document.getElementById('productStatus').value = product.status || 'متوفر';
+                    document.getElementById('productDescription').value = product.description || '';
+                    document.getElementById('productImage').value = product.image || '';
+                    addProductModal.classList.add('show');
+                }
+            }
+            
+            // حذف منتج
+            function deleteProduct(productId, productName) {
+                db.collection("products").doc(productId).delete()
+                    .then(() => {
+                        showNotification('تم الحذف', `تم حذف المنتج "${productName}" بنجاح`, 'success');
+                        console.log("✅ تم حذف المنتج:", productId);
+                    })
+                    .catch((error) => {
+                        console.error("❌ خطأ في حذف المنتج:", error);
+                        showNotification('خطأ في الحذف', 'حدث خطأ أثناء حذف المنتج', 'error');
+                    });
+            }
+            
+            // إدارة المستخدم
+            function manageUser(userId, userEmail, disabled) {
+                userModalTitle.textContent = `إدارة المستخدم: ${userEmail}`;
+                
+                userModalBody.innerHTML = `
+                    <div class="form-group">
+                        <label>البريد الإلكتروني:</label>
+                        <p style="padding: 0.75rem; background: rgba(255,255,255,0.1); border-radius: 10px;">${userEmail}</p>
+                    </div>
+                    <div class="form-group">
+                        <label>حالة الحساب:</label>
+                        <p style="padding: 0.75rem; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                            ${disabled ? 'محظور' : 'نشط'}
+                        </p>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="btn ${disabled ? 'btn-primary' : 'btn-danger'}" id="toggleUserStatus">
+                            <i class="fas ${disabled ? 'fa-unlock' : 'fa-lock'}"></i>
+                            ${disabled ? 'تفعيل الحساب' : 'تعطيل الحساب'}
+                        </button>
+                    </div>
+                `;
+                
+                // ربط حدث تغيير حالة المستخدم
+                document.getElementById('toggleUserStatus').addEventListener('click', function() {
+                    const newStatus = !disabled;
+                    
+                    showConfirmModal(
+                        newStatus ? 'تفعيل الحساب' : 'تعطيل الحساب',
+                        `هل أنت متأكد من ${newStatus ? 'تفعيل' : 'تعطيل'} حساب المستخدم "${userEmail}"؟`,
+                        () => toggleUserStatus(userId, newStatus, userEmail)
+                    );
+                });
+                
+                // ربط حدث حذف المستخدم
+                deleteUserBtn.onclick = function() {
+                    showConfirmModal(
+                        'حذف المستخدم',
+                        `هل أنت متأكد من حذف حساب المستخدم "${userEmail}"؟ لا يمكن التراجع عن هذا الإجراء.`,
+                        () => deleteUser(userId, userEmail)
+                    );
+                };
+                
+                userModal.classList.add('show');
+            }
+            
+            // تغيير حالة المستخدم (تفعيل/تعطيل)
+            function toggleUserStatus(userId, newStatus, userEmail) {
+                db.collection("users").doc(userId).update({
+                    disabled: !newStatus
+                })
+                .then(() => {
+                    showNotification('تم التحديث', `تم ${newStatus ? 'تفعيل' : 'تعطيل'} حساب المستخدم "${userEmail}" بنجاح`, 'success');
+                    console.log(`✅ تم ${newStatus ? 'تفعيل' : 'تعطيل'} المستخدم:`, userId);
+                    loadUsers(); // إعادة تحميل قائمة المستخدمين
+                    userModal.classList.remove('show');
+                })
+                .catch((error) => {
+                    console.error("❌ خطأ في تغيير حالة المستخدم:", error);
+                    showNotification('خطأ في التحديث', 'حدث خطأ أثناء تغيير حالة المستخدم', 'error');
+                });
+            }
+            
+            // حذف المستخدم
+            function deleteUser(userId, userEmail) {
+                db.collection("users").doc(userId).delete()
+                .then(() => {
+                    showNotification('تم الحذف', `تم حذف حساب المستخدم "${userEmail}" بنجاح`, 'success');
+                    console.log("✅ تم حذف المستخدم:", userId);
+                    loadUsers(); // إعادة تحميل قائمة المستخدمين
+                    userModal.classList.remove('show');
+                })
+                .catch((error) => {
+                    console.error("❌ خطأ في حذف المستخدم:", error);
+                    showNotification('خطأ في الحذف', 'حدث خطأ أثناء حذف المستخدم', 'error');
+                });
+            }
+            
+// عرض تفاصيل الطلب مع البيانات الجديدة
+function viewOrder(orderId) {
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+        // تحويل توقيت التحويل إلى تنسيق عربي
+        let transferTimeText = 'غير محدد';
+        if (order.transferTime) {
+            const transferDate = order.transferTime.toDate ? 
+                order.transferTime.toDate() : new Date(order.transferTime);
+            transferTimeText = transferDate.toLocaleString('ar-EG');
+        }
+
+        // إنشاء محتوى تفاصيل الطلب
+        const orderDetails = `
+            <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem;">
+                <h3 style="color: var(--primary); margin-bottom: 1rem; text-align: center;">تفاصيل الطلب #${orderId.substring(0, 8)}</h3>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <strong>👤 العميل:</strong>
+                        <p>${order.customerName}</p>
+                    </div>
+                    <div>
+                        <strong>📞 الهاتف:</strong>
+                        <p>${order.customerPhone}</p>
+                    </div>
+                    <div>
+                        <strong>📧 البريد:</strong>
+                        <p>${order.customerEmail || 'غير محدد'}</p>
+                    </div>
+                    <div>
+                        <strong>💰 الإجمالي:</strong>
+                        <p>${order.total || 0} ج.م</p>
+                    </div>
+                </div>
+
+                <!-- البيانات الجديدة -->
+                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <h4 style="color: var(--primary); margin-bottom: 1rem;">📋 معلومات التحويل</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <strong>📱 رقم الهاتف المحول منه:</strong>
+                            <p style="background: rgba(33,150,243,0.1); padding: 0.5rem; border-radius: 5px; margin-top: 0.5rem;">
+                                ${order.transferFromPhone || 'غير محدد'}
+                            </p>
+                        </div>
+                        <div>
+                            <strong>🕒 توقيت التحويل:</strong>
+                            <p style="background: rgba(33,150,243,0.1); padding: 0.5rem; border-radius: 5px; margin-top: 0.5rem;">
+                                ${transferTimeText}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ملاحظات الطلب -->
+                <div style="margin-top: 1rem;">
+                    <strong>📝 ملاحظات:</strong>
+                    <p style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 5px; margin-top: 0.5rem;">
+                        ${order.orderNotes || 'لا توجد ملاحظات'}
+                    </p>
+                </div>
+
+                <!-- منتجات الطلب -->
+                <div style="margin-top: 1rem;">
+                    <strong>🛍️ المنتجات:</strong>
+                    <div style="margin-top: 0.5rem;">
+                        ${order.items ? order.items.map(item => `
+                            <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 5px; margin-bottom: 0.5rem;">
+                                <span>${item.name}</span>
+                                <span>${item.quantity} × ${item.price} ج.م</span>
+                            </div>
+                        `).join('') : 'لا توجد منتجات'}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // عرض التفاصيل في مودال
+        showOrderDetailsModal(orderDetails);
+    }
+}
+
+// دالة لعرض مودال تفاصيل الطلب
+function showOrderDetailsModal(content) {
+    // إنشاء مودال جديد أو استخدام المودال الموجود
+    let modal = document.getElementById('orderDetailsModal');
+    
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'orderDetailsModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 700px;">
+                <div class="modal-header">
+                    <h3>تفاصيل الطلب</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <div id="orderDetailsContent"></div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary close-modal">إغلاق</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // ربط أحداث إغلاق المودال
+        modal.querySelector('.close-modal').addEventListener('click', function() {
+            modal.classList.remove('show');
+        });
+        
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.classList.remove('show');
+            }
+        });
+    }
+    
+    // تعبئة المحتوى
+    document.getElementById('orderDetailsContent').innerHTML = content;
+    
+    // إظهار المودال
+    modal.classList.add('show');
+}
+            
+            // تحديث حالة الطلب
+            function updateOrderStatus(orderId) {
+                const order = orders.find(o => o.id === orderId);
+                if (order) {
+                    const newStatus = prompt('أدخل الحالة الجديدة (pending, completed, cancelled):', order.status);
+                    if (newStatus && ['pending', 'completed', 'cancelled'].includes(newStatus)) {
+                        db.collection("orders").doc(orderId).update({
+                            status: newStatus
+                        })
+                        .then(() => {
+                            showNotification('تم التحديث', 'تم تحديث حالة الطلب بنجاح', 'success');
+                            console.log("✅ تم تحديث حالة الطلب:", orderId);
+                        })
+                        .catch((error) => {
+                            console.error("❌ خطأ في تحديث حالة الطلب:", error);
+                            showNotification('خطأ في التحديث', 'حدث خطأ أثناء تحديث حالة الطلب', 'error');
+                        });
+                    }
+                }
+            }
+            
+            // حذف رأي العميل
+            function deleteTestimonial(testimonialId, testimonialName) {
+                db.collection("testimonials").doc(testimonialId).delete()
+                    .then(() => {
+                        showNotification('تم الحذف', `تم حذف رأي "${testimonialName}" بنجاح`, 'success');
+                        console.log("✅ تم حذف الرأي:", testimonialId);
+                    })
+                    .catch((error) => {
+                        console.error("❌ خطأ في حذف الرأي:", error);
+                        showNotification('خطأ في الحذف', 'حدث خطأ أثناء حذف الرأي', 'error');
+                    });
+            }
+            
+            // التنقل بين الأقسام
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    if (this.getAttribute('href') === '#') return;
+                    
+                    e.preventDefault();
+                    
+                    // إزالة النشاط من جميع الروابط
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    
+                    // إضافة النشاط للرابط المحدد
+                    this.classList.add('active');
+                    
+                    // إخفاء جميع الأقسام
+                    sections.forEach(section => section.classList.add('hidden'));
+                    
+                    // إظهار القسم المحدد
+                    const sectionId = this.getAttribute('data-section') + 'Section';
+                    document.getElementById(sectionId).classList.remove('hidden');
+
+                    // إذا كان القسم هو الدعم الفني، قم بتحميل الطلبات
+                    if (this.getAttribute('data-section') === 'support') {
+                        setTimeout(loadSupportRequests, 100);
+                    }
+                });
+            });
+            
+            // تحميل طلبات الدعم الفني
+            function loadSupportRequests() {
+                console.log('🔄 جاري تحميل طلبات الدعم...');
+                
+                db.collection("support_requests")
+                    .orderBy("createdAt", "desc")
+                    .get()
+                    .then((querySnapshot) => {
+                        supportRequests = [];
+                        supportList.innerHTML = '';
+                        
+                        if (querySnapshot.empty) {
+                            supportList.innerHTML = `
+                                <div style="text-align: center; padding: 2rem; color: rgba(255,255,255,0.5);">
+                                    <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                                    <p>لا توجد طلبات دعم حالياً</p>
+                                </div>
+                            `;
+                            updateSupportStats();
+                            return;
+                        }
+                        
+                        querySnapshot.forEach((doc) => {
+                            const request = { id: doc.id, ...doc.data() };
+                            supportRequests.push(request);
+                            
+                            const date = request.createdAt?.toDate ? 
+                                request.createdAt.toDate().toLocaleDateString('ar-EG') : 
+                                new Date().toLocaleDateString('ar-EG');
+                            
+                            const supportItem = document.createElement('div');
+                            supportItem.className = 'support-item';
+                            supportItem.setAttribute('data-id', doc.id);
+                            
+                            supportItem.innerHTML = `
+                                <div class="support-header">
+                                    <div class="support-name">${request.name || 'بدون اسم'}</div>
+                                    <span class="support-status ${request.status || 'pending'}">${getSupportStatusText(request.status)}</span>
+                                </div>
+                                <div class="support-phone">${request.phone || 'بدون هاتف'}</div>
+                                <div class="support-date">${date}</div>
+                            `;
+                            
+                            supportList.appendChild(supportItem);
+                            
+                            // ربط حدث النقر على طلب الدعم
+                            supportItem.addEventListener('click', function() {
+                                document.querySelectorAll('.support-item').forEach(item => {
+                                    item.classList.remove('active');
+                                });
+                                this.classList.add('active');
+                                openChat(doc.id, request);
+                            });
+                        });
+                        
+                        updateSupportStats();
+                    })
+                    .catch((error) => {
+                        console.error("❌ خطأ في تحميل طلبات الدعم:", error);
+                        supportList.innerHTML = `
+                            <div style="text-align: center; padding: 2rem; color: rgba(255,71,87,0.8);">
+                                <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                                <p>حدث خطأ في تحميل طلبات الدعم</p>
+                            </div>
+                        `;
+                    });
+            }
+
+            // تحديث إحصائيات الدعم
+            function updateSupportStats() {
+                const total = supportRequests.length;
+                const pending = supportRequests.filter(req => req.status === 'pending').length;
+                
+                totalChats.textContent = total;
+                pendingChats.textContent = pending;
+            }
+
+            // فتح محادثة الدعم
+            function openChat(chatId, request) {
+                currentChatId = chatId;
+                
+                // تحديث معلومات المستخدم
+                chatUserName.textContent = request.name;
+                chatUserPhone.textContent = request.phone;
+                chatAvatar.textContent = request.name.charAt(0).toUpperCase();
+                
+                // إظهار لوحة المحادثة وإخفاء رسالة "اختر محادثة"
+                chatPanel.classList.remove('hidden');
+                noChatSelected.classList.add('hidden');
+                
+                // تحميل الرسائل
+                loadChatMessages(chatId);
+            }
+
+            // تحميل رسائل المحادثة
+            function loadChatMessages(chatId) {
+                console.log('📨 جاري تحميل رسائل المحادثة:', chatId);
+                chatMessages.innerHTML = '<div class="loading"><div class="loading-spinner"></div><div>جاري تحميل الرسائل...</div></div>';
+                
+                db.collection("support_requests")
+                    .doc(chatId)
+                    .collection("messages")
+                    .orderBy("timestamp", "asc")
+                    .onSnapshot((snapshot) => {
+                        console.log('🔄 تم تحديث الرسائل:', snapshot.size, 'رسالة');
+                        chatMessages.innerHTML = '';
+                        
+                        if (snapshot.empty) {
+                            chatMessages.innerHTML = `
+                                <div style="text-align: center; padding: 2rem; color: rgba(255,255,255,0.5);">
+                                    <p>لا توجد رسائل في هذه المحادثة بعد</p>
+                                    <p>ابدأ المحادثة بإرسال رسالة!</p>
+                                </div>
+                            `;
+                            return;
+                        }
+                        
+                        snapshot.forEach((doc) => {
+                            const message = doc.data();
+                            const messageDiv = document.createElement('div');
+                            
+                            const date = message.timestamp?.toDate ? 
+                                message.timestamp.toDate().toLocaleString('ar-EG') : 
+                                new Date().toLocaleString('ar-EG');
+                            
+                            messageDiv.className = `message ${message.sender === 'user' ? 'message-user' : 'message-admin'}`;
+                            messageDiv.innerHTML = `
+                                <div>${message.text}</div>
+                                <div class="message-time">${date}</div>
+                            `;
+                            
+                            chatMessages.appendChild(messageDiv);
+                        });
+                        
+                        // التمرير إلى أحدث رسالة
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }, (error) => {
+                        console.error("❌ خطأ في تحميل الرسائل:", error);
+                        chatMessages.innerHTML = `
+                            <div style="text-align: center; padding: 2rem; color: rgba(255,71,87,0.8);">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p>حدث خطأ في تحميل الرسائل</p>
+                            </div>
+                        `;
+                    });
+            }
+
+            // إرسال رسالة
+            function sendMessage() {
+                const messageText = messageInput.value.trim();
+                
+                if (!messageText) {
+                    showNotification('خطأ', 'يرجى كتابة رسالة', 'error');
+                    return;
+                }
+                
+                if (!currentChatId) {
+                    showNotification('خطأ', 'يرجى اختيار محادثة أولاً', 'error');
+                    return;
+                }
+                
+                console.log('📤 جاري إرسال رسالة:', messageText);
+                
+                // إضافة الرسالة إلى قاعدة البيانات
+                db.collection("support_requests")
+                    .doc(currentChatId)
+                    .collection("messages")
+                    .add({
+                        text: messageText,
+                        sender: 'admin',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    })
+                    .then(() => {
+                        console.log('✅ تم إرسال الرسالة بنجاح');
+                        messageInput.value = '';
+                        
+                        // تحديث حالة الطلب إلى "جاري الرد"
+                        db.collection("support_requests")
+                            .doc(currentChatId)
+                            .update({
+                                status: 'in-progress',
+                                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                            })
+                            .then(() => {
+                                console.log('✅ تم تحديث حالة المحادثة');
+                            })
+                            .catch((error) => {
+                                console.error('❌ خطأ في تحديث الحالة:', error);
+                            });
+                    })
+                    .catch((error) => {
+                        console.error("❌ خطأ في إرسال الرسالة:", error);
+                        showNotification('خطأ في الإرسال', 'تعذر إرسال الرسالة', 'error');
+                    });
+            }
+
+            // إنهاء المحادثة
+            function completeChat() {
+                if (!currentChatId) return;
+                
+                showConfirmModal(
+                    'إنهاء المحادثة',
+                    'هل أنت متأكد من إنهاء هذه المحادثة؟',
+                    () => {
+                        db.collection("support_requests")
+                            .doc(currentChatId)
+                            .update({
+                                status: 'completed',
+                                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                            })
+                            .then(() => {
+                                showNotification('تم الإنهاء', 'تم إنهاء المحادثة بنجاح', 'success');
+                                
+                                // تحديث واجهة المستخدم
+                                const activeItem = document.querySelector('.support-item.active');
+                                if (activeItem) {
+                                    const statusElement = activeItem.querySelector('.support-status');
+                                    statusElement.textContent = 'مكتمل';
+                                    statusElement.className = 'support-status completed';
+                                }
+                            })
+                            .catch((error) => {
+                                console.error("❌ خطأ في إنهاء المحادثة:", error);
+                                showNotification('خطأ في الإنهاء', 'تعذر إنهاء المحادثة', 'error');
+                            });
+                    }
+                );
+            }
+
+            // حذف المحادثة
+            function deleteChat() {
+                if (!currentChatId) return;
+                
+                showConfirmModal(
+                    'حذف المحادثة',
+                    'هل أنت متأكد من حذف هذه المحادثة؟ لا يمكن التراجع عن هذا الإجراء.',
+                    () => {
+                        // حذف جميع الرسائل أولاً
+                        db.collection("support_requests")
+                            .doc(currentChatId)
+                            .collection("messages")
+                            .get()
+                            .then((snapshot) => {
+                                const deletePromises = [];
+                                snapshot.forEach((doc) => {
+                                    deletePromises.push(doc.ref.delete());
+                                });
+                                
+                                return Promise.all(deletePromises);
+                            })
+                            .then(() => {
+                                // ثم حذف المحادثة نفسها
+                                return db.collection("support_requests").doc(currentChatId).delete();
+                            })
+                            .then(() => {
+                                showNotification('تم الحذف', 'تم حذف المحادثة بنجاح', 'success');
+                                closeChat();
+                            })
+                            .catch((error) => {
+                                console.error("❌ خطأ في حذف المحادثة:", error);
+                                showNotification('خطأ في الحذف', 'تعذر حذف المحادثة', 'error');
+                            });
+                    }
+                );
+            }
+
+            // إغلاق المحادثة
+            function closeChat() {
+                chatPanel.classList.add('hidden');
+                noChatSelected.classList.remove('hidden');
+                currentChatId = null;
+                
+                // إزالة النشاط من جميع العناصر
+                document.querySelectorAll('.support-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+            }
+
+            // وظيفة مساعدة للحالة
+            function getSupportStatusText(status) {
+                switch(status) {
+                    case 'pending': return 'قيد الانتظار';
+                    case 'in-progress': return 'جاري الرد';
+                    case 'completed': return 'مكتمل';
+                    case 'closed': return 'مغلق';
+                    default: return 'قيد الانتظار';
+                }
+            }
+
+            // ربط أحداث الدعم الفني
+            sendMessageBtn.addEventListener('click', sendMessage);
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            completeChatBtn.addEventListener('click', completeChat);
+            closeChatBtn.addEventListener('click', closeChat);
+            deleteChatBtn.addEventListener('click', deleteChat);
+
+            // مودال التأكيد
+            function showConfirmModal(title, message, callback) {
+                confirmTitle.textContent = title;
+                confirmMessage.textContent = message;
+                pendingAction = callback;
+                confirmModal.classList.add('show');
+            }
+            
+            cancelConfirm.addEventListener('click', function() {
+                confirmModal.classList.remove('show');
+                pendingAction = null;
+            });
+            
+            confirmAction.addEventListener('click', function() {
+                if (pendingAction) {
+                    pendingAction();
+                }
+                confirmModal.classList.remove('show');
+                pendingAction = null;
+            });
+            
+            // إغلاق مودال التأكيد بالنقر خارج المحتوى
+            confirmModal.addEventListener('click', function(e) {
+                if (e.target === confirmModal) {
+                    confirmModal.classList.remove('show');
+                    pendingAction = null;
+                }
+            });
+            
+            // وظائف مساعدة
+            function getStatusClass(status) {
+                switch(status) {
+                    case 'pending': return 'status-pending';
+                    case 'completed': return 'status-completed';
+                    case 'cancelled': return 'status-cancelled';
+                    default: return 'status-pending';
+                }
+            }
+            
+            function getStatusText(status) {
+                switch(status) {
+                    case 'pending': return 'قيد الانتظار';
+                    case 'completed': return 'مكتمل';
+                    case 'cancelled': return 'ملغي';
+                    default: return 'قيد الانتظار';
+                }
+            }
+            
+            function showAlert(message, type) {
+                const alert = document.createElement('div');
+                alert.className = `alert alert-${type}`;
+                alert.innerHTML = `
+                    <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'}"></i>
+                    <span>${message}</span>
+                `;
+                
+                document.querySelector('.main-content').insertBefore(alert, document.querySelector('.stats-grid'));
+                
+                setTimeout(() => {
+                    alert.remove();
+                }, 5000);
+            }
+            
+            function showLoading(element) {
+                element.innerHTML = `
+                    <tr>
+                        <td colspan="${element.closest('table').querySelectorAll('th').length}" class="loading">
+                            <div class="loading-spinner"></div>
+                        </td>
+                    </tr>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
